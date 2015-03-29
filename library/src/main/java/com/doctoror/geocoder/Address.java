@@ -112,11 +112,13 @@ public class Address implements Parcelable {
      * Geometry
      */
 
-    private double mLocationLat;
-
-    private double mLocationLng;
+    private Location mLocation;
 
     private String mLocationType;
+
+    private Viewport mViewport;
+
+    private Bounds mBounds;
 
     public Address() {
 
@@ -164,9 +166,10 @@ public class Address implements Parcelable {
         mTrainStation = p.readString();
         mTransitStation = p.readString();
 
-        mLocationLat = p.readDouble();
-        mLocationLng = p.readDouble();
         mLocationType = p.readString();
+        mLocation = p.readParcelable(Location.class.getClassLoader());
+        mViewport = p.readParcelable(Viewport.class.getClassLoader());
+        mBounds = p.readParcelable(Bounds.class.getClassLoader());
     }
 
     @Override
@@ -211,9 +214,10 @@ public class Address implements Parcelable {
         p.writeString(mTrainStation);
         p.writeString(mTransitStation);
 
-        p.writeDouble(mLocationLat);
-        p.writeDouble(mLocationLng);
         p.writeString(mLocationType);
+        p.writeParcelable(mLocation, 0);
+        p.writeParcelable(mViewport, 0);
+        p.writeParcelable(mBounds, 0);
     }
 
     @Override
@@ -729,30 +733,43 @@ public class Address implements Parcelable {
         mTransitStation = transitStation;
     }
 
-    /**
-     * The location latitude
-     *
-     * @return the location latitude
-     */
-    public double getLocationLat() {
-        return mLocationLat;
+    public Location getLocation() {
+        return mLocation;
     }
 
-    public void setLocationLat(final double locationLat) {
-        mLocationLat = locationLat;
+    public void setLocation(final Location location) {
+        mLocation = location;
     }
 
     /**
-     * The location longitude
+     * Contains the recommended viewport for displaying the returned result, specified as two
+     * latitude,longitude values defining the southwest and northeast corner of the viewport
+     * bounding box. Generally the viewport is used to frame a result when displaying it to a user.
      *
-     * @return the location longitude
+     * @return Viewport
      */
-    public double getLocationLng() {
-        return mLocationLng;
+    public Viewport getViewport() {
+        return mViewport;
     }
 
-    public void setLocationLng(final double locationLng) {
-        mLocationLng = locationLng;
+    public void setViewport(final Viewport viewport) {
+        mViewport = viewport;
+    }
+
+    /**
+     * Stores the bounding box which can fully contain the returned result.
+     * Note that these bounds may not match the recommended viewport. (For example, San Francisco
+     * includes the Farallon islands, which are technically part of the city, but probably should
+     * not be returned in the viewport.) Optionally returned.
+     *
+     * @return Bounds
+     */
+    public Bounds getBounds() {
+        return mBounds;
+    }
+
+    public void setBounds(final Bounds bounds) {
+        mBounds = bounds;
     }
 
     /**
@@ -761,8 +778,10 @@ public class Address implements Parcelable {
      * "ROOFTOP" indicates that the returned result is a precise geocode for which we have location
      * information accurate down to street address precision.
      *
-     * "RANGE_INTERPOLATED" indicates that the returned result reflects an approximation (usually on
-     * a road) interpolated between two precise points (such as intersections). Interpolated results
+     * "RANGE_INTERPOLATED" indicates that the returned result reflects an approximation (usually
+     * on
+     * a road) interpolated between two precise points (such as intersections). Interpolated
+     * results
      * are generally returned when rooftop geocodes are unavailable for a street address.
      *
      * "GEOMETRIC_CENTER" indicates that the returned result is the geometric center of a result
@@ -815,14 +834,16 @@ public class Address implements Parcelable {
                 ", mEstablishment='" + mEstablishment + '\'' +
                 ", mParking='" + mParking + '\'' +
                 ", mPostBox='" + mPostBox + '\'' +
+                ", mPostTown='" + mPostTown + '\'' +
                 ", mRoom='" + mRoom + '\'' +
                 ", mStreetNumber='" + mStreetNumber + '\'' +
                 ", mBusStation='" + mBusStation + '\'' +
                 ", mTrainStation='" + mTrainStation + '\'' +
                 ", mTransitStation='" + mTransitStation + '\'' +
-                ", mLocationLat='" + mLocationLat + '\'' +
-                ", mLocationLng='" + mLocationLng + '\'' +
+                ", mLocation=" + mLocation +
                 ", mLocationType='" + mLocationType + '\'' +
+                ", mViewport=" + mViewport +
+                ", mBounds=" + mBounds +
                 '}';
     }
 
@@ -838,4 +859,151 @@ public class Address implements Parcelable {
             return new Address[size];
         }
     };
+
+    public static final class Location implements Parcelable {
+
+        public final double latitude;
+
+        public final double longitude;
+
+        Location(final double latitude, final double longitude) {
+            this.latitude = latitude;
+            this.longitude = longitude;
+        }
+
+        Location(final Parcel p) {
+            latitude = p.readDouble();
+            longitude = p.readDouble();
+        }
+
+        @Override
+        public void writeToParcel(final Parcel p, final int flags) {
+            p.writeDouble(latitude);
+            p.writeDouble(longitude);
+        }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public String toString() {
+            return "Location{" +
+                    "latitude=" + latitude +
+                    ", longitude=" + longitude +
+                    '}';
+        }
+
+        public static final Creator<Location> CREATOR = new Creator<Location>() {
+
+            @Override
+            public Location createFromParcel(final Parcel source) {
+                return new Location(source);
+            }
+
+            @Override
+            public Location[] newArray(final int size) {
+                return new Location[size];
+            }
+        };
+    }
+
+    public static final class Viewport implements Parcelable {
+
+        public final Location southwest;
+
+        public final Location northeast;
+
+        Viewport(final Location southwest, final Location northeast) {
+            this.southwest = southwest;
+            this.northeast = northeast;
+        }
+
+        Viewport(final Parcel p) {
+            southwest = p.readParcelable(Location.class.getClassLoader());
+            northeast = p.readParcelable(Location.class.getClassLoader());
+        }
+
+        @Override
+        public void writeToParcel(final Parcel p, final int flags) {
+            p.writeParcelable(southwest, 0);
+            p.writeParcelable(northeast, 0);
+        }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public String toString() {
+            return "Viewport{" +
+                    "southwest=" + southwest +
+                    ", northeast=" + northeast +
+                    '}';
+        }
+
+        public static final Creator<Viewport> CREATOR = new Creator<Viewport>() {
+
+            @Override
+            public Viewport createFromParcel(final Parcel source) {
+                return new Viewport(source);
+            }
+
+            @Override
+            public Viewport[] newArray(final int size) {
+                return new Viewport[size];
+            }
+        };
+    }
+
+    public static final class Bounds implements Parcelable {
+
+        public final Location southwest;
+
+        public final Location northeast;
+
+        Bounds(final Location southwest, final Location northeast) {
+            this.southwest = southwest;
+            this.northeast = northeast;
+        }
+
+        Bounds(final Parcel p) {
+            southwest = p.readParcelable(Location.class.getClassLoader());
+            northeast = p.readParcelable(Location.class.getClassLoader());
+        }
+
+        @Override
+        public void writeToParcel(final Parcel p, final int flags) {
+            p.writeParcelable(southwest, 0);
+            p.writeParcelable(northeast, 0);
+        }
+
+        @Override
+        public int describeContents() {
+            return 0;
+        }
+
+        @Override
+        public String toString() {
+            return "Bounds{" +
+                    "southwest=" + southwest +
+                    ", northeast=" + northeast +
+                    '}';
+        }
+
+        public static final Creator<Bounds> CREATOR = new Creator<Bounds>() {
+
+            @Override
+            public Bounds createFromParcel(final Parcel source) {
+                return new Bounds(source);
+            }
+
+            @Override
+            public Bounds[] newArray(final int size) {
+                return new Bounds[size];
+            }
+        };
+    }
 }
