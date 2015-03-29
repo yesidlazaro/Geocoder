@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:lametric="http://schemas.android.com/apk/res-auto"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:orientation="vertical">
+
+    <android.support.v7.widget.Toolbar
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:id="@+id/toolbar"
+        android:background="?attr/colorPrimary"
+        lametric:contentInsetEnd="8dp"
+        lametric:contentInsetStart="0dp">
+
+        <android.support.v7.widget.SearchView
+            android:id="@+id/searchview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:queryHint="Type location name"
+            lametric:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+            lametric:popupTheme="@style/ThemeOverlay.AppCompat.Light">
+
+            <requestFocus/>
+        </android.support.v7.widget.SearchView>
+    </android.support.v7.widget.Toolbar>
+
+    <ViewAnimator
+        android:id="@+id/animator"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:animateFirstView="true"
+        android:inAnimation="@android:anim/fade_in">
+
+        <!-- ANIMATOR CHILD EMPTY -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="No results"/>
+
+        <!-- ANIMATOR CHILD PROGRESS -->
+
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            style="?android:attr/progressBarStyleLarge"/>
+
+        <!-- ANIMATOR CHILD CONTENT -->
+
+        <LinearLayout android:layout_width="match_parent"
+                      android:layout_height="match_parent"
+                      android:orientation="vertical">
+
+            <TextView android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:padding="10dp"
+                      android:gravity="center"
+                android:text="Click on list item for details"/>
+
+            <ListView
+                android:id="@+id/list"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+
+        </LinearLayout>
+    </ViewAnimator>
+
+</LinearLayout>
