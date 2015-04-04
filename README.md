@@ -3,6 +3,18 @@
 This Geocoder has similar API to android.location.Geocoder, but is device-independent implementation and offers more rich Address object.
 See sample project for more details.
 
+Min API level 7
+
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.doctoror.geocoder/library/badge.png?style=flat)](https://maven-badges.herokuapp.com/maven-central/com.github.doctoror.geocoder/library)
+
+Add this to build.gradle dependencies, replacing x.x.x with version number.
+
+```groovy
+dependencies {
+    compile 'com.github.doctoror.geocoder:library:x.x.x'
+}
+```
+
 ##License
 
 ```
