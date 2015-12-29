@@ -111,6 +111,19 @@ public final class Geocoder {
         mReferrer = referrer;
     }
 
+    @NonNull
+    private Uri.Builder buildBaseRequestUri() {
+        final Uri.Builder uriBuilder = Uri.parse(ENDPOINT_URL).buildUpon()
+                .appendQueryParameter("language", mLocale.getLanguage());
+        if (mApiKey != null && !mApiKey.isEmpty()) {
+            uriBuilder.appendQueryParameter("key", mApiKey);
+        }
+        if (mReferrer != null && !mReferrer.isEmpty()) {
+            uriBuilder.appendQueryParameter("Referer", mReferrer);
+        }
+        return uriBuilder;
+    }
+
     /**
      * Returns an array of Addresses that are known to describe the area
      * immediately surrounding the given latitude and longitude. The returned
@@ -153,17 +166,9 @@ public final class Geocoder {
 
         final List<Address> results = new ArrayList<>();
 
-        final Uri.Builder uriBuilder = Uri.parse(ENDPOINT_URL)
-                .buildUpon()
+        final Uri.Builder uriBuilder = buildBaseRequestUri()
                 .appendQueryParameter("sensor", "true")
-                .appendQueryParameter("language", mLocale.getLanguage())
                 .appendQueryParameter("latlng", latitude + "," + longitude);
-        if (mApiKey != null && !mApiKey.isEmpty()) {
-            uriBuilder.appendQueryParameter("key", mApiKey);
-        }
-        if (mReferrer != null && !mReferrer.isEmpty()) {
-            uriBuilder.appendQueryParameter("Referer", mReferrer);
-        }
 
         final byte[] data;
         try {
@@ -212,14 +217,9 @@ public final class Geocoder {
             throw GeocoderException.forQueryOverLimit();
         }
 
-        final Uri.Builder uriBuilder = Uri.parse(ENDPOINT_URL)
-                .buildUpon()
+        final Uri.Builder uriBuilder = buildBaseRequestUri()
                 .appendQueryParameter("sensor", "false")
-                .appendQueryParameter("language", mLocale.getLanguage())
                 .appendQueryParameter("address", locationName);
-        if (mApiKey != null && !mApiKey.isEmpty()) {
-            uriBuilder.appendQueryParameter("key", mApiKey);
-        }
 
         final String url = uriBuilder.toString();
         byte[] data;
