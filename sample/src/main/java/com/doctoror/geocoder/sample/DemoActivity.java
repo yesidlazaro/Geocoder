@@ -19,18 +19,17 @@ package com.doctoror.geocoder.sample;
 import com.doctoror.geocoder.Address;
 import com.doctoror.geocoder.Geocoder;
 
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v7.app.ActionBarActivity;
-import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
@@ -46,7 +45,7 @@ import java.lang.ref.WeakReference;
 import java.util.List;
 import java.util.Locale;
 
-public final class DemoActivity extends ActionBarActivity
+public final class DemoActivity extends AppCompatActivity
         implements SearchView.OnQueryTextListener, AdapterView.OnItemClickListener {
 
     private static final int MIN_REQUEST_LENGTH = 3;
@@ -87,10 +86,56 @@ public final class DemoActivity extends ActionBarActivity
             final long id) {
         final Address item = (Address) parent.getItemAtPosition(position);
         if (item != null) {
-            new AlertDialog.Builder(this).setMessage(item.toString()).setCancelable(true)
-                    .setNeutralButton(android.R.string.cancel,
-                            (DialogInterface.OnClickListener) null).show();
+            new AlertDialog.Builder(this).setMessage(addressToPrettyString(item))
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show();
         }
+    }
+
+    private String addressToPrettyString(@NonNull final Address address) {
+        return "mFormattedAddress='" + address.getFormattedAddress() + '\'' +
+                "\nmStreetAddress='" + address.getStreetAddress() + '\'' +
+                "\nmRoute='" + address.getRoute() + '\'' +
+                "\nmIntersection='" + address.getIntersection() + '\'' +
+                "\nmPolitical='" + address.getPolitical() + '\'' +
+                "\nmCountry='" + address.getCountry() + '\'' +
+                "\nmAdministrativeAreaLevel1='" + address.getAdministrativeAreaLevel1() + '\'' +
+                "\nmAdministrativeAreaLevel2='"+ address.getAdministrativeAreaLevel2() + '\'' +
+                "\nmAdministrativeAreaLevel3='"+ address.getAdministrativeAreaLevel3() + '\'' +
+                "\nmAdministrativeAreaLevel4='"+ address.getAdministrativeAreaLevel4() + '\'' +
+                "\nmAdministrativeAreaLevel5='"+ address.getAdministrativeAreaLevel5() + '\'' +
+                "\nmColloquialArea='"+ address.getColloquialArea() + '\'' +
+                "\nmLocality='"+ address.getLocality() + '\'' +
+                "\nmWard='"+ address.getWard() + '\'' +
+                "\nmSubLocality='"+ address.getSubLocality() + '\'' +
+                "\nmSubLocalityLevel1='"+ address.getSubLocalityLevel1() + '\'' +
+                "\nmSubLocalityLevel2='"+ address.getSubLocalityLevel2() + '\'' +
+                "\nmSubLocalityLevel3='"+ address.getSubLocalityLevel3() + '\'' +
+                "\nmSubLocalityLevel4='"+ address.getSubLocalityLevel4() + '\'' +
+                "\nmSubLocalityLevel5='"+ address.getSubLocalityLevel5() + '\'' +
+                "\nmNeighborhood='"+ address.getNeighborhood() + '\'' +
+                "\nmPremise='"+ address.getPremise() + '\'' +
+                "\nmSubPremise='"+ address.getSubPremise() + '\'' +
+                "\nmPostalCode='"+ address.getPostalCode() + '\'' +
+                "\nmNaturalFeature='"+ address.getNaturalFeature() + '\'' +
+                "\nmAirport='"+ address.getAirport() + '\'' +
+                "\nmPark='"+ address.getPark() + '\'' +
+                "\nmPointOfInterest='"+ address.getPointOfInterest() + '\'' +
+                "\nmFloor='"+ address.getFloor() + '\'' +
+                "\nmEstablishment='"+ address.getEstablishment() + '\'' +
+                "\nmParking='"+ address.getParking() + '\'' +
+                "\nmPostBox='"+ address.getPostBox() + '\'' +
+                "\nmPostTown='"+ address.getPostTown() + '\'' +
+                "\nmRoom='"+ address.getRoom() + '\'' +
+                "\nmStreetNumber='"+ address.getStreetNumber() + '\'' +
+                "\nmBusStation='"+ address.getBusStation() + '\'' +
+                "\nmTrainStation='"+ address.getTrainStation() + '\'' +
+                "\nmTransitStation='"+ address.getTransitStation() + '\'' +
+                "\nmLocation="+ address.getLocation() +
+                "\nmLocationType='"+ address.getLocationType() + '\'' +
+                "\nmViewport="+ address.getViewport() +
+                "\nmBounds="+ address.getBounds() +
+                '}';
     }
 
     @Override
