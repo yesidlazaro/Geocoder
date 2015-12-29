@@ -118,9 +118,6 @@ public final class Geocoder {
         if (mApiKey != null && !mApiKey.isEmpty()) {
             uriBuilder.appendQueryParameter("key", mApiKey);
         }
-        if (mReferrer != null && !mReferrer.isEmpty()) {
-            uriBuilder.appendQueryParameter("Referer", mReferrer);
-        }
         return uriBuilder;
     }
 
@@ -271,7 +268,7 @@ public final class Geocoder {
      * @return downloaded data or null if error occurred
      */
     @NonNull
-    private static byte[] download(String url) throws IOException {
+    private byte[] download(String url) throws IOException {
         InputStream is = null;
         ByteArrayOutputStream os = null;
 
@@ -279,6 +276,9 @@ public final class Geocoder {
 
             final URL u = new URL(url);
             final URLConnection connection = u.openConnection();
+            if (mReferrer != null && !mReferrer.isEmpty()) {
+                connection.setRequestProperty("Referer", mReferrer);
+            }
             connection.connect();
 
             is = connection.getInputStream();
