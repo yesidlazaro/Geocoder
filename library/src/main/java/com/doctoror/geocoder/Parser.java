@@ -21,7 +21,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
