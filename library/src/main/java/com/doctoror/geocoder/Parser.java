@@ -17,10 +17,14 @@
 package com.doctoror.geocoder;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
+import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,16 +36,8 @@ final class Parser {
      * Status codes which we handle
      */
 
-    /**
-     * Indicates that no errors occurred; the address was successfully parsed
-     * and at least one geocode was returned.
-     */
-    private static final String STATUS_OK = "OK";
 
-    /**
-     * Indicates that you are over your quota.
-     */
-    private static final String STATUS_OVER_QUERY_LIMIT = "OVER_QUERY_LIMIT";
+    private static final String ERROR_MESSAGE = "error_message";
 
     private static final String STATUS = "status";
 
@@ -75,263 +71,311 @@ final class Parser {
 
     private static final String SHORT_NAME = "short_name";
 
-    static void parseJson(@NonNull final List<Address> address,
+    private Parser() {
+    }
+
+    /**
+     * Parses response into {@link List}
+     *
+     * @param jsonData
+     * @param maxResults
+     * @param parseAddressComponents
+     * @return {@link Address} {@link List}
+     * @throws GeocoderException if error occurs
+     */
+    @NonNull
+    static List<Address> parseJson(final byte[] jsonData,
             final int maxResults,
-            final byte[] data,
             final boolean parseAddressComponents)
-            throws Geocoder.LimitExceededException {
+            throws GeocoderException {
         try {
-            final String json = new String(data, "UTF-8");
-            final JSONObject o = new JSONObject(json);
-            if (!o.has(STATUS)) {
-                return;
+            final String jsonString = new String(jsonData, Charset.forName("UTF-8"));
+            final JSONObject jsonObject = new JSONObject(jsonString);
+
+            if (!jsonObject.has(STATUS)) {
+                throw new GeocoderException(new JSONException("No \"status\" field"));
             }
-            final String status = o.getString(STATUS);
-            if (status.equals(STATUS_OK) && o.has(RESULTS)) {
 
-                final JSONArray results = o.getJSONArray(RESULTS);
-
-                for (int i = 0; i < maxResults && i < results.length(); i++) {
-                    final Address current = new Address();
-                    final JSONObject result = results.getJSONObject(i);
-                    if (result.has(FORMATTED_ADDRESS)) {
-                        current.setFormattedAddress(result.getString(FORMATTED_ADDRESS));
+            final Status status = Status.fromString(jsonObject.getString(STATUS));
+            switch (status) {
+                case OK:
+                    if (jsonObject.has(RESULTS)) {
+                        return parseResults(maxResults, parseAddressComponents, jsonObject);
                     }
+                    return new ArrayList<>();
 
-                    if (result.has(GEOMETRY)) {
-                        final JSONObject geometry = result.getJSONObject(GEOMETRY);
-                        if (geometry.has(LOCATION_TYPE)) {
-                            current.setLocationType(geometry.getString(LOCATION_TYPE));
+                case ZERO_RESULTS:
+                    return new ArrayList<>();
+
+                default:
+                    final GeocoderException e = GeocoderException.forStatus(status);
+                    try {
+                        if (jsonObject.has(ERROR_MESSAGE)) {
+                            e.setErrorMessage(jsonObject.getString(ERROR_MESSAGE));
                         }
-
-                        if (geometry.has(LOCATION)) {
-                            final JSONObject location = geometry.getJSONObject(LOCATION);
-                            current.setLocation(new Address.Location(location.getDouble(LAT),
-                                    location.getDouble(LNG)));
-                        }
-
-                        if (geometry.has(VIEWPORT)) {
-                            final JSONObject viewport = geometry.getJSONObject(VIEWPORT);
-                            if (viewport.has(SOUTHWEST) && viewport.has(NORTHEAST)) {
-                                final JSONObject southwest = viewport.getJSONObject(SOUTHWEST);
-                                final Address.Location locationSouthwest = new Address.Location(
-                                        southwest.getDouble(LAT),
-                                        southwest.getDouble(LNG));
-
-                                final JSONObject northeast = viewport.getJSONObject(NORTHEAST);
-                                final Address.Location locationNortheast = new Address.Location(
-                                        northeast.getDouble(LAT),
-                                        northeast.getDouble(LNG));
-
-                               current.setViewport(new Address.Viewport(locationSouthwest,
-                                       locationNortheast));
-                            }
-                        }
-
-                        if (geometry.has(BOUNDS)) {
-                            final JSONObject viewport = geometry.getJSONObject(BOUNDS);
-                            if (viewport.has(SOUTHWEST) && viewport.has(NORTHEAST)) {
-                                final JSONObject southwest = viewport.getJSONObject(SOUTHWEST);
-                                final Address.Location locationSouthwest = new Address.Location(
-                                        southwest.getDouble("lat"),
-                                        southwest.getDouble("lng"));
-
-                                final JSONObject northeast = viewport.getJSONObject(NORTHEAST);
-                                final Address.Location locationNortheast = new Address.Location(
-                                        northeast.getDouble("lat"),
-                                        northeast.getDouble("lng"));
-
-                                current.setBounds(new Address.Bounds(locationSouthwest,
-                                        locationNortheast));
-                            }
-                        }
+                    } catch (JSONException ignored) {
                     }
+                    throw e;
+            }
+        } catch (JSONException e) {
+            throw new GeocoderException(e);
+        }
+    }
 
-                    if (parseAddressComponents && result.has(ADDRESS_COMPONENTS)) {
-                        final JSONArray addressComponents = result
-                                .getJSONArray(ADDRESS_COMPONENTS);
-                        for (int a = 0; a < addressComponents.length(); a++) {
-                            final JSONObject addressComponent = addressComponents.getJSONObject(a);
-                            if (!addressComponent.has(TYPES)) {
-                                continue;
-                            }
-                            String value = null;
-                            if (addressComponent.has(LONG_NAME)) {
-                                value = addressComponent.getString(LONG_NAME);
-                            } else if (addressComponent.has(SHORT_NAME)) {
-                                value = addressComponent.getString(SHORT_NAME);
-                            }
-                            if (value == null || value.isEmpty()) {
-                                continue;
-                            }
-                            final JSONArray types = addressComponent.getJSONArray(TYPES);
-                            for (int t = 0; t < types.length(); t++) {
-                                final String type = types.getString(t);
-                                switch (type) {
-                                    case "street_address":
-                                        current.setStreetAddress(value);
-                                        break;
+    private static List<Address> parseResults(final int maxResults,
+            final boolean parseAddressComponents,
+            @NonNull final JSONObject o) throws JSONException {
+        final JSONArray results = o.getJSONArray(RESULTS);
+        final int count = results.length() >= maxResults ? maxResults : results.length();
+        final ArrayList<Address> addressList = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
 
-                                    case "route":
-                                        current.setRoute(value);
-                                        break;
+            final Address address = new Address();
+            final JSONObject result = results.getJSONObject(i);
 
-                                    case "intersection":
-                                        current.setIntersection(value);
-                                        break;
+            if (result.has(FORMATTED_ADDRESS)) {
+                address.setFormattedAddress(result.getString(FORMATTED_ADDRESS));
+            }
 
-                                    case "political":
-                                        current.setPolitical(value);
-                                        break;
+            parseGeometry(result, address);
 
-                                    case "country":
-                                        current.setCountry(value);
-                                        break;
+            if (parseAddressComponents) {
+                parseAddressComponents(result, address);
+            }
 
-                                    case "administrative_area_level_1":
-                                        current.setAdministrativeAreaLevel1(value);
-                                        break;
+            addressList.add(address);
+        }
+        return addressList;
+    }
 
-                                    case "administrative_area_level_2":
-                                        current.setAdministrativeAreaLevel2(value);
-                                        break;
+    private static void parseGeometry(@NonNull final JSONObject result,
+            @NonNull final Address current) throws JSONException {
+        if (result.has(GEOMETRY)) {
+            final JSONObject geometry = result.getJSONObject(GEOMETRY);
+            if (geometry.has(LOCATION_TYPE)) {
+                current.setLocationType(geometry.getString(LOCATION_TYPE));
+            }
 
-                                    case "administrative_area_level_3":
-                                        current.setAdministrativeAreaLevel3(value);
-                                        break;
+            if (geometry.has(LOCATION)) {
+                final JSONObject location = geometry.getJSONObject(LOCATION);
+                current.setLocation(new Address.Location(location.getDouble(LAT),
+                        location.getDouble(LNG)));
+            }
 
-                                    case "administrative_area_level_4":
-                                        current.setAdministrativeAreaLevel4(value);
-                                        break;
+            if (geometry.has(VIEWPORT)) {
+                final JSONObject viewport = geometry.getJSONObject(VIEWPORT);
+                if (viewport.has(SOUTHWEST) && viewport.has(NORTHEAST)) {
+                    final JSONObject southwest = viewport.getJSONObject(SOUTHWEST);
+                    final Address.Location locationSouthwest = new Address.Location(
+                            southwest.getDouble(LAT),
+                            southwest.getDouble(LNG));
 
-                                    case "administrative_area_level_5":
-                                        current.setAdministrativeAreaLevel5(value);
-                                        break;
+                    final JSONObject northeast = viewport.getJSONObject(NORTHEAST);
+                    final Address.Location locationNortheast = new Address.Location(
+                            northeast.getDouble(LAT),
+                            northeast.getDouble(LNG));
 
-                                    case "colloquial_area":
-                                        current.setColloquialArea(value);
-                                        break;
-
-                                    case "locality":
-                                        current.setLocality(value);
-                                        break;
-
-                                    case "ward":
-                                        current.setWard(value);
-                                        break;
-
-                                    case "sublocality":
-                                        current.setSubLocality(value);
-                                        break;
-
-                                    case "sublocality_level_1":
-                                        current.setSubLocalityLevel1(value);
-                                        break;
-
-                                    case "sublocality_level_2":
-                                        current.setSubLocalityLevel2(value);
-                                        break;
-
-                                    case "sublocality_level_3":
-                                        current.setSubLocalityLevel3(value);
-                                        break;
-
-                                    case "sublocality_level_4":
-                                        current.setSubLocalityLevel4(value);
-                                        break;
-
-                                    case "sublocality_level_5":
-                                        current.setSubLocalityLevel5(value);
-                                        break;
-
-                                    case "neighborhood":
-                                        current.setNeighborhood(value);
-
-                                    case "premise":
-                                        current.setPremise(value);
-                                        break;
-
-                                    case "subpremise":
-                                        current.setSubPremise(value);
-                                        break;
-
-                                    case "postal_code":
-                                        current.setPostalCode(value);
-                                        break;
-
-                                    case "natural_feature":
-                                        current.setNaturalFeature(value);
-                                        break;
-
-                                    case "airport":
-                                        current.setAirport(value);
-                                        break;
-
-                                    case "park":
-                                        current.setPark(value);
-                                        break;
-
-                                    case "point_of_interest":
-                                        current.setPointOfInterest(value);
-                                        break;
-
-                                    case "floor":
-                                        current.setFloor(value);
-                                        break;
-
-                                    case "establishment":
-                                        current.setEstablishment(value);
-                                        break;
-
-                                    case "parking":
-                                        current.setParking(value);
-                                        break;
-
-                                    case "post_box":
-                                        current.setPostBox(value);
-                                        break;
-
-                                    case "postal_town":
-                                        current.setPostTown(value);
-                                        break;
-
-                                    case "room":
-                                        current.setRoom(value);
-                                        break;
-
-                                    case "street_number":
-                                        current.setStreetNumber(value);
-                                        break;
-
-                                    case "bus_station":
-                                        current.setBusStation(value);
-                                        break;
-
-                                    case "train_station":
-                                        current.setTrainStation(value);
-                                        break;
-
-                                    case "transit_station":
-                                        current.setTransitStation(value);
-                                        break;
-
-                                    default:
-                                        // Unhandled
-                                        break;
-                                }
-                            }
-                        }
-                    }
-                    address.add(current);
+                    current.setViewport(new Address.Viewport(locationSouthwest,
+                            locationNortheast));
                 }
-
-            } else if (status.equals(STATUS_OVER_QUERY_LIMIT)) {
-                throw new Geocoder.LimitExceededException();
             }
-        } catch (Geocoder.LimitExceededException e) {
-            throw e;
-        } catch (Throwable e) {
-            e.printStackTrace();
+
+            if (geometry.has(BOUNDS)) {
+                final JSONObject viewport = geometry.getJSONObject(BOUNDS);
+                if (viewport.has(SOUTHWEST) && viewport.has(NORTHEAST)) {
+                    final JSONObject southwest = viewport.getJSONObject(SOUTHWEST);
+                    final Address.Location locationSouthwest = new Address.Location(
+                            southwest.getDouble(LAT),
+                            southwest.getDouble(LNG));
+
+                    final JSONObject northeast = viewport.getJSONObject(NORTHEAST);
+                    final Address.Location locationNortheast = new Address.Location(
+                            northeast.getDouble(LAT),
+                            northeast.getDouble(LNG));
+
+                    current.setBounds(new Address.Bounds(locationSouthwest,
+                            locationNortheast));
+                }
+            }
+        }
+    }
+
+    private static void parseAddressComponents(@NonNull final JSONObject result,
+            @NonNull final Address address) throws JSONException {
+        if (result.has(ADDRESS_COMPONENTS)) {
+            final JSONArray addressComponents = result
+                    .getJSONArray(ADDRESS_COMPONENTS);
+            for (int a = 0; a < addressComponents.length(); a++) {
+                final JSONObject addressComponent = addressComponents.getJSONObject(a);
+                if (!addressComponent.has(TYPES)) {
+                    continue;
+                }
+                String value = null;
+                if (addressComponent.has(LONG_NAME)) {
+                    value = addressComponent.getString(LONG_NAME);
+                } else if (addressComponent.has(SHORT_NAME)) {
+                    value = addressComponent.getString(SHORT_NAME);
+                }
+                if (value == null || value.isEmpty()) {
+                    continue;
+                }
+                final JSONArray types = addressComponent.getJSONArray(TYPES);
+                for (int t = 0; t < types.length(); t++) {
+                    final String type = types.getString(t);
+                    switch (type) {
+                        case "street_address":
+                            address.setStreetAddress(value);
+                            break;
+
+                        case "route":
+                            address.setRoute(value);
+                            break;
+
+                        case "intersection":
+                            address.setIntersection(value);
+                            break;
+
+                        case "political":
+                            address.setPolitical(value);
+                            break;
+
+                        case "country":
+                            address.setCountry(value);
+                            break;
+
+                        case "administrative_area_level_1":
+                            address.setAdministrativeAreaLevel1(value);
+                            break;
+
+                        case "administrative_area_level_2":
+                            address.setAdministrativeAreaLevel2(value);
+                            break;
+
+                        case "administrative_area_level_3":
+                            address.setAdministrativeAreaLevel3(value);
+                            break;
+
+                        case "administrative_area_level_4":
+                            address.setAdministrativeAreaLevel4(value);
+                            break;
+
+                        case "administrative_area_level_5":
+                            address.setAdministrativeAreaLevel5(value);
+                            break;
+
+                        case "colloquial_area":
+                            address.setColloquialArea(value);
+                            break;
+
+                        case "locality":
+                            address.setLocality(value);
+                            break;
+
+                        case "ward":
+                            address.setWard(value);
+                            break;
+
+                        case "sublocality":
+                            address.setSubLocality(value);
+                            break;
+
+                        case "sublocality_level_1":
+                            address.setSubLocalityLevel1(value);
+                            break;
+
+                        case "sublocality_level_2":
+                            address.setSubLocalityLevel2(value);
+                            break;
+
+                        case "sublocality_level_3":
+                            address.setSubLocalityLevel3(value);
+                            break;
+
+                        case "sublocality_level_4":
+                            address.setSubLocalityLevel4(value);
+                            break;
+
+                        case "sublocality_level_5":
+                            address.setSubLocalityLevel5(value);
+                            break;
+
+                        case "neighborhood":
+                            address.setNeighborhood(value);
+
+                        case "premise":
+                            address.setPremise(value);
+                            break;
+
+                        case "subpremise":
+                            address.setSubPremise(value);
+                            break;
+
+                        case "postal_code":
+                            address.setPostalCode(value);
+                            break;
+
+                        case "natural_feature":
+                            address.setNaturalFeature(value);
+                            break;
+
+                        case "airport":
+                            address.setAirport(value);
+                            break;
+
+                        case "park":
+                            address.setPark(value);
+                            break;
+
+                        case "point_of_interest":
+                            address.setPointOfInterest(value);
+                            break;
+
+                        case "floor":
+                            address.setFloor(value);
+                            break;
+
+                        case "establishment":
+                            address.setEstablishment(value);
+                            break;
+
+                        case "parking":
+                            address.setParking(value);
+                            break;
+
+                        case "post_box":
+                            address.setPostBox(value);
+                            break;
+
+                        case "postal_town":
+                            address.setPostTown(value);
+                            break;
+
+                        case "room":
+                            address.setRoom(value);
+                            break;
+
+                        case "street_number":
+                            address.setStreetNumber(value);
+                            break;
+
+                        case "bus_station":
+                            address.setBusStation(value);
+                            break;
+
+                        case "train_station":
+                            address.setTrainStation(value);
+                            break;
+
+                        case "transit_station":
+                            address.setTransitStation(value);
+                            break;
+
+                        default:
+                            // Unhandled
+                            break;
+                    }
+                }
+            }
         }
     }
 }

@@ -63,6 +63,9 @@ public final class Geocoder {
     @Nullable
     private final String mApiKey;
 
+    @Nullable
+    private final String mReferrer;
+
     private SharedPreferences mSharedPreferences;
 
     private long mAllowedDate;
@@ -75,29 +78,37 @@ public final class Geocoder {
      * @param locale  The Locale to use
      */
     public Geocoder(@NonNull final Context context, @NonNull final Locale locale) {
-        this(context, locale, null);
+        this(context, locale, null, null);
     }
 
     /**
      * Constructs a Geocoder that will use your API key and whose responses will be localized for
      * the given {@link Locale}
      *
-     * @param context the Context of the calling Activity
-     * @param locale  The Locale to use
-     * @param apiKey  Your application's API key. This key identifies your application for purposes
-     *                of quota management
+     * @param context  the Context of the calling Activity
+     * @param locale   the Locale to use
+     * @param apiKey   your application's API key. This key identifies your application for
+     *                 purposes of quota management. This is a <b>Browser key</b>, not Android key
+     *                 created in Google Developer Console
+     * @param referrer referrer to use. When you create a browser key in Google Developer Console,
+     *                 it is encouraged to add a referrer which will be accepted by Google servers.
+     *                 If you leave this blank, requests will be accepted from any referrer. Be
+     *                 sure to add referrers before using this key in production.
      */
     public Geocoder(@NonNull final Context context, @NonNull final Locale locale,
-            @Nullable final String apiKey) {
+            @Nullable final String apiKey, @Nullable final String referrer) {
+        //noinspection ConstantConditions
         if (context == null) {
             throw new NullPointerException("context == null");
         }
+        //noinspection ConstantConditions
         if (locale == null) {
             throw new NullPointerException("locale == null");
         }
         mContext = context;
         mLocale = locale;
         mApiKey = apiKey;
+        mReferrer = referrer;
     }
 
     /**
@@ -122,13 +133,13 @@ public final class Geocoder {
      * @return a list of Address objects. Returns empty list if no matches were found.
      * @throws IllegalArgumentException if latitude is less than -90 or greater than 90
      * @throws IllegalArgumentException if longitude is less than -180 or greater than 180
-     * @throws IOException              if the network is unavailable or any other I/O problem
-     *                                  occurs
+     * @throws GeocoderException        On Geocoder error, if the network is unavailable or any
+     *                                  other I/O problem occurs
      */
     @NonNull
     public List<Address> getFromLocation(final double latitude, final double longitude,
             final int maxResults, final boolean parseAddressComponents)
-            throws IOException, LimitExceededException {
+            throws GeocoderException {
         if (latitude < -90.0 || latitude > 90.0) {
             throw new IllegalArgumentException("latitude == " + latitude);
         }
@@ -137,7 +148,7 @@ public final class Geocoder {
         }
 
         if (isLimitExceeded()) {
-            throw new LimitExceededException();
+            throw GeocoderException.forQueryOverLimit();
         }
 
         final List<Address> results = new ArrayList<>();
@@ -150,11 +161,18 @@ public final class Geocoder {
         if (mApiKey != null && !mApiKey.isEmpty()) {
             uriBuilder.appendQueryParameter("key", mApiKey);
         }
-
-        final byte[] data = download(uriBuilder.toString());
-        if (data != null) {
-            Parser.parseJson(results, maxResults, data, parseAddressComponents);
+        if (mReferrer != null && !mReferrer.isEmpty()) {
+            uriBuilder.appendQueryParameter("Referer", mReferrer);
         }
+
+        final byte[] data;
+        try {
+            data = download(uriBuilder.toString());
+        } catch (IOException e) {
+            throw new GeocoderException(e);
+        }
+
+        Parser.parseJson(data, maxResults, parseAddressComponents);
         return results;
     }
 
@@ -179,22 +197,20 @@ public final class Geocoder {
      *                               javadoc
      * @return a list of Address objects. Returns empty list if no matches were found.
      * @throws IllegalArgumentException if locationName is null
-     * @throws IOException              if the network is unavailable or any other I/O problem
-     *                                  occurs
+     * @throws GeocoderException        if parse failed, Geocoder returned error, or if the network
+     *                                  is unavailable or any other I/O problem occurs
      */
     @NonNull
     public List<Address> getFromLocationName(final String locationName, final int maxResults,
             final boolean parseAddressComponents)
-            throws IOException, LimitExceededException {
+            throws GeocoderException {
         if (locationName == null) {
             throw new IllegalArgumentException("locationName == null");
         }
 
         if (isLimitExceeded()) {
-            throw new LimitExceededException();
+            throw GeocoderException.forQueryOverLimit();
         }
-
-        final List<Address> results = new ArrayList<>();
 
         final Uri.Builder uriBuilder = Uri.parse(ENDPOINT_URL)
                 .buildUpon()
@@ -206,31 +222,46 @@ public final class Geocoder {
         }
 
         final String url = uriBuilder.toString();
-        byte[] data = download(url);
-        if (data != null) {
-            try {
-                Parser.parseJson(results, maxResults, data, parseAddressComponents);
-            } catch (LimitExceededException e) {
-                //LimitExceededException could be thrown if too many calls per second
-                //If after two seconds, it is thrown again - then it means there are too much calls per 24 hours
+        byte[] data;
+        try {
+            data = download(url);
+        } catch (IOException e) {
+            throw new GeocoderException(e);
+        }
+
+        try {
+            return Parser.parseJson(data, maxResults, parseAddressComponents);
+        } catch (GeocoderException e) {
+            if (e.getStatus() == Status.OVER_QUERY_LIMIT) {
+                // OVER_QUERY_LIMIT could be thrown if too many calls per second
+                // If after two seconds, it is thrown again - then it means there are too much calls
+                // per 24 hours
                 try {
                     Thread.sleep(2000);
                 } catch (InterruptedException e1) {
-                    return results;
+                    // Safely abort when interrupted
+                    return new ArrayList<>();
                 }
-                data = download(url);
-                if (data != null) {
-                    try {
-                        Parser.parseJson(results, maxResults, data, parseAddressComponents);
-                    } catch (LimitExceededException lee) {
+
+                try {
+                    data = download(url);
+                } catch (IOException ioe) {
+                    throw new GeocoderException(ioe);
+                }
+
+                try {
+                    return Parser.parseJson(data, maxResults, parseAddressComponents);
+                } catch (GeocoderException e1) {
+                    if (e1.getStatus() == Status.OVER_QUERY_LIMIT) {
                         // available in 24 hours
                         setAllowedDate(System.currentTimeMillis() + 86400000L);
-                        throw lee;
                     }
+                    throw e1;
                 }
+            } else {
+                throw e;
             }
         }
-        return results;
     }
 
     /**
@@ -239,7 +270,8 @@ public final class Geocoder {
      * @param url Data location
      * @return downloaded data or null if error occurred
      */
-    private static byte[] download(String url) {
+    @NonNull
+    private static byte[] download(String url) throws IOException {
         InputStream is = null;
         ByteArrayOutputStream os = null;
 
@@ -264,8 +296,6 @@ public final class Geocoder {
             }
 
             return os.toByteArray();
-        } catch (IOException e) {
-            e.printStackTrace();
         } finally {
             if (is != null) {
                 try {
@@ -280,8 +310,6 @@ public final class Geocoder {
                 }
             }
         }
-
-        return null;
     }
 
     /**
@@ -323,14 +351,4 @@ public final class Geocoder {
         }
         return mAllowedDate;
     }
-
-    /**
-     * Is thrown when the query was over limit before 24 hours
-     */
-    public static final class LimitExceededException
-            extends Exception {
-
-        private static final long serialVersionUID = -1243645207607944474L;
-    }
-
 }

@@ -18,6 +18,7 @@ package com.doctoror.geocoder.sample;
 
 import com.doctoror.geocoder.Address;
 import com.doctoror.geocoder.Geocoder;
+import com.doctoror.geocoder.GeocoderException;
 
 import android.content.Context;
 import android.os.AsyncTask;
@@ -40,7 +41,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewAnimator;
 
-import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.List;
 import java.util.Locale;
@@ -209,14 +209,14 @@ public final class DemoActivity extends AppCompatActivity
         protected Object doInBackground(final Void... params) {
             try {
                 return mGeocoder.getFromLocationName(mQuery, 20, true);
-            } catch (IOException | Geocoder.LimitExceededException e) {
+            } catch (GeocoderException e) {
                 return e;
             }
         }
 
         @Override
         protected void onPostExecute(final Object result) {
-            if (result instanceof Exception) {
+            if (result instanceof GeocoderException) {
                 Toast.makeText(DemoActivity.this, result.toString(), Toast.LENGTH_LONG).show();
                 updateData(null);
                 return;
