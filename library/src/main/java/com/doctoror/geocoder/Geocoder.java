@@ -17,20 +17,21 @@
 
 package com.doctoror.geocoder;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.net.Uri;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
-import android.support.annotation.NonNull;
 
 /**
  * A class for handling geocoding and reverse geocoding. Geocoding is the
@@ -51,21 +52,43 @@ public final class Geocoder {
 
     private static final String KEY_ALLOW = "com.doctoror.geocoder.preferences.keys.allow";
 
+    private static final String ENDPOINT_URL = "https://maps.googleapis.com/maps/api/geocode/json";
+
+    @NonNull
     private final Context mContext;
 
+    @NonNull
     private final Locale mLocale;
+
+    @Nullable
+    private final String mApiKey;
 
     private SharedPreferences mSharedPreferences;
 
     private long mAllowedDate;
 
     /**
-     * Constructs a Geocoder whose responses will be localized for the default
-     * system Locale.
+     * Constructs a Geocoder whose responses will be localized for the given {@link Locale} with no
+     * API key
      *
      * @param context the Context of the calling Activity
+     * @param locale  The Locale to use
      */
-    public Geocoder(final Context context, final Locale locale) {
+    public Geocoder(@NonNull final Context context, @NonNull final Locale locale) {
+        this(context, locale, null);
+    }
+
+    /**
+     * Constructs a Geocoder that will use your API key and whose responses will be localized for
+     * the given {@link Locale}
+     *
+     * @param context the Context of the calling Activity
+     * @param locale  The Locale to use
+     * @param apiKey  Your application's API key. This key identifies your application for purposes
+     *                of quota management
+     */
+    public Geocoder(@NonNull final Context context, @NonNull final Locale locale,
+            @Nullable final String apiKey) {
         if (context == null) {
             throw new NullPointerException("context == null");
         }
@@ -74,6 +97,7 @@ public final class Geocoder {
         }
         mContext = context;
         mLocale = locale;
+        mApiKey = apiKey;
     }
 
     /**
@@ -118,15 +142,16 @@ public final class Geocoder {
 
         final List<Address> results = new ArrayList<>();
 
-        final StringBuilder url = new StringBuilder(
-                "http://maps.googleapis.com/maps/api/geocode/json?sensor=true&latlng=");
-        url.append(latitude);
-        url.append(',');
-        url.append(longitude);
-        url.append("&language=");
-        url.append(mLocale.getLanguage());
+        final Uri.Builder uriBuilder = Uri.parse(ENDPOINT_URL)
+                .buildUpon()
+                .appendQueryParameter("sensor", "true")
+                .appendQueryParameter("language", mLocale.getLanguage())
+                .appendQueryParameter("latlng", latitude + "," + longitude);
+        if (mApiKey != null && !mApiKey.isEmpty()) {
+            uriBuilder.appendQueryParameter("key", mApiKey);
+        }
 
-        final byte[] data = download(url.toString());
+        final byte[] data = download(uriBuilder.toString());
         if (data != null) {
             Parser.parseJson(results, maxResults, data, parseAddressComponents);
         }
@@ -171,13 +196,17 @@ public final class Geocoder {
 
         final List<Address> results = new ArrayList<>();
 
-        final StringBuilder request = new StringBuilder(
-                "http://maps.googleapis.com/maps/api/geocode/json?sensor=false");
-        request.append("&language=").append(mLocale.getLanguage());
-        request.append("&address=").append(
-                URLEncoder.encode(locationName, "UTF-8"));
+        final Uri.Builder uriBuilder = Uri.parse(ENDPOINT_URL)
+                .buildUpon()
+                .appendQueryParameter("sensor", "false")
+                .appendQueryParameter("language", mLocale.getLanguage())
+                .appendQueryParameter("address", locationName);
+        if (mApiKey != null && !mApiKey.isEmpty()) {
+            uriBuilder.appendQueryParameter("key", mApiKey);
+        }
 
-        byte[] data = download(request.toString());
+        final String url = uriBuilder.toString();
+        byte[] data = download(url);
         if (data != null) {
             try {
                 Parser.parseJson(results, maxResults, data, parseAddressComponents);
@@ -189,7 +218,7 @@ public final class Geocoder {
                 } catch (InterruptedException e1) {
                     return results;
                 }
-                data = download(request.toString());
+                data = download(url);
                 if (data != null) {
                     try {
                         Parser.parseJson(results, maxResults, data, parseAddressComponents);
