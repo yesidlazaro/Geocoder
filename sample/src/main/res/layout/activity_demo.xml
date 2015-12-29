@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:lametric="http://schemas.android.com/apk/res-auto"
-              android:layout_width="match_parent"
-              android:layout_height="match_parent"
-              android:orientation="vertical">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
     <android.support.v7.widget.Toolbar
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:id="@+id/toolbar"
         android:background="?attr/colorPrimary"
-        lametric:contentInsetEnd="8dp"
-        lametric:contentInsetStart="0dp">
+        app:contentInsetEnd="8dp"
+        app:contentInsetStart="0dp">
 
         <android.support.v7.widget.SearchView
             android:id="@+id/searchview"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:queryHint="Type location name"
-            lametric:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-            lametric:popupTheme="@style/ThemeOverlay.AppCompat.Light">
+            app:queryHint="@string/Type_location_name"
+            app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+            app:popupTheme="@style/ThemeOverlay.AppCompat.Light">
 
             <requestFocus/>
         </android.support.v7.widget.SearchView>
@@ -29,7 +29,6 @@
         android:id="@+id/animator"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:animateFirstView="true"
         android:inAnimation="@android:anim/fade_in">
 
         <!-- ANIMATOR CHILD EMPTY -->
@@ -38,27 +37,27 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center"
-            android:text="No results"/>
+            android:text="@string/No_Results"/>
 
         <!-- ANIMATOR CHILD PROGRESS -->
 
         <ProgressBar
+            style="?android:attr/progressBarStyleLarge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            style="?android:attr/progressBarStyleLarge"/>
+            android:layout_gravity="center"/>
 
         <!-- ANIMATOR CHILD CONTENT -->
 
         <LinearLayout android:layout_width="match_parent"
-                      android:layout_height="match_parent"
-                      android:orientation="vertical">
+            android:layout_height="match_parent"
+            android:orientation="vertical">
 
             <TextView android:layout_width="match_parent"
-                      android:layout_height="wrap_content"
-                      android:padding="10dp"
-                      android:gravity="center"
-                android:text="Click on list item for details"/>
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:gravity="center"
+                android:text="@string/Click_on_list_item_for_details"/>
 
             <ListView
                 android:id="@+id/list"

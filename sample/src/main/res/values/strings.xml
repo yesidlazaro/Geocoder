@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">Geocoder</string>
 
-    <string name="hello_world">Hello world!</string>
-    <string name="action_settings">Settings</string>
+    <string name="No_Results">No Results</string>
+    <string name="Type_location_name">Type location name</string>
+    <string name="Click_on_list_item_for_details">Click on list item for details</string>
+
 </resources>
