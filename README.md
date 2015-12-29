@@ -1,6 +1,6 @@
 ##Description
 
-This Geocoder has similar API to android.location.Geocoder, but is device-independent implementation and offers more rich Address object.
+This Geocoder has similar API to android.location.Geocoder, but is device-independent implementation and offers richer Address object.
 See sample project for more details.
 
 Min API level 7
