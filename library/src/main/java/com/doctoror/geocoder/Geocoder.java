@@ -153,8 +153,6 @@ public final class Geocoder {
             throw GeocoderException.forQueryOverLimit();
         }
 
-        final List<Address> results = new ArrayList<>();
-
         final Uri.Builder uriBuilder = buildBaseRequestUri()
                 .appendQueryParameter("sensor", "true")
                 .appendQueryParameter("latlng", latitude + "," + longitude);
@@ -166,8 +164,7 @@ public final class Geocoder {
             throw new GeocoderException(e);
         }
 
-        Parser.parseJson(data, maxResults, parseAddressComponents);
-        return results;
+        return Parser.parseJson(data, maxResults, parseAddressComponents);
     }
 
     /**
