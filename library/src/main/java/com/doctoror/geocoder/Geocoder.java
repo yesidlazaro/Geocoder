@@ -63,9 +63,6 @@ public final class Geocoder {
     @Nullable
     private final String mApiKey;
 
-    @Nullable
-    private final String mReferrer;
-
     private SharedPreferences mSharedPreferences;
 
     private long mAllowedDate;
@@ -78,25 +75,21 @@ public final class Geocoder {
      * @param locale  The Locale to use
      */
     public Geocoder(@NonNull final Context context, @NonNull final Locale locale) {
-        this(context, locale, null, null);
+        this(context, locale, null);
     }
 
     /**
      * Constructs a Geocoder that will use your API key and whose responses will be localized for
      * the given {@link Locale}
      *
-     * @param context  the Context of the calling Activity
-     * @param locale   the Locale to use
-     * @param apiKey   your application's API key. This key identifies your application for
-     *                 purposes of quota management. This is a <b>Browser key</b>, not Android key
-     *                 created in Google Developer Console
-     * @param referrer referrer to use. When you create a browser key in Google Developer Console,
-     *                 it is encouraged to add a referrer which will be accepted by Google servers.
-     *                 If you leave this blank, requests will be accepted from any referrer. Be
-     *                 sure to add referrers before using this key in production.
+     * @param context the Context of the calling Activity
+     * @param locale  the Locale to use
+     * @param apiKey  your application's API key. This key identifies your application for
+     *                purposes of quota management. This must be a <b>Server key</b>, not Android
+     *                key created in Google Developer Console
      */
     public Geocoder(@NonNull final Context context, @NonNull final Locale locale,
-            @Nullable final String apiKey, @Nullable final String referrer) {
+            @Nullable final String apiKey) {
         //noinspection ConstantConditions
         if (context == null) {
             throw new NullPointerException("context == null");
@@ -108,7 +101,6 @@ public final class Geocoder {
         mContext = context;
         mLocale = locale;
         mApiKey = apiKey;
-        mReferrer = referrer;
     }
 
     @NonNull
@@ -268,7 +260,7 @@ public final class Geocoder {
      * @return downloaded data or null if error occurred
      */
     @NonNull
-    private byte[] download(String url) throws IOException {
+    private static byte[] download(String url) throws IOException {
         InputStream is = null;
         ByteArrayOutputStream os = null;
 
@@ -276,9 +268,6 @@ public final class Geocoder {
 
             final URL u = new URL(url);
             final URLConnection connection = u.openConnection();
-            if (mReferrer != null && !mReferrer.isEmpty()) {
-                connection.setRequestProperty("Referer", mReferrer);
-            }
             connection.connect();
 
             is = connection.getInputStream();
