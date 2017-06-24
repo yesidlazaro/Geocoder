@@ -16,11 +16,11 @@
 
 package com.doctoror.geocoder;
 
+import android.support.annotation.NonNull;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import android.support.annotation.NonNull;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -84,8 +84,8 @@ final class Parser {
      */
     @NonNull
     static List<Address> parseJson(final byte[] jsonData,
-            final int maxResults,
-            final boolean parseAddressComponents)
+                                   final int maxResults,
+                                   final boolean parseAddressComponents)
             throws GeocoderException {
         try {
             final String jsonString = new String(jsonData, Charset.forName("UTF-8"));
@@ -122,8 +122,8 @@ final class Parser {
     }
 
     private static List<Address> parseResults(final int maxResults,
-            final boolean parseAddressComponents,
-            @NonNull final JSONObject o) throws JSONException {
+                                              final boolean parseAddressComponents,
+                                              @NonNull final JSONObject o) throws JSONException {
         final JSONArray results = o.getJSONArray(RESULTS);
         final int count = results.length() >= maxResults ? maxResults : results.length();
         final ArrayList<Address> addressList = new ArrayList<>(count);
@@ -148,7 +148,7 @@ final class Parser {
     }
 
     private static void parseGeometry(@NonNull final JSONObject result,
-            @NonNull final Address current) throws JSONException {
+                                      @NonNull final Address current) throws JSONException {
         if (result.has(GEOMETRY)) {
             final JSONObject geometry = result.getJSONObject(GEOMETRY);
             if (geometry.has(LOCATION_TYPE)) {
@@ -200,7 +200,7 @@ final class Parser {
     }
 
     private static void parseAddressComponents(@NonNull final JSONObject result,
-            @NonNull final Address address) throws JSONException {
+                                               @NonNull final Address address) throws JSONException {
         if (result.has(ADDRESS_COMPONENTS)) {
             final JSONArray addressComponents = result
                     .getJSONArray(ADDRESS_COMPONENTS);
@@ -240,6 +240,9 @@ final class Parser {
 
                         case "country":
                             address.setCountry(value);
+                            if (addressComponent.has(SHORT_NAME)) {
+                                address.setCountryCode(addressComponent.getString(SHORT_NAME));
+                            }
                             break;
 
                         case "administrative_area_level_1":

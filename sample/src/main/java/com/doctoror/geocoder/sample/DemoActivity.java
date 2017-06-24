@@ -16,13 +16,8 @@
 
 package com.doctoror.geocoder.sample;
 
-import com.doctoror.geocoder.Address;
-import com.doctoror.geocoder.Geocoder;
-import com.doctoror.geocoder.GeocoderException;
-
 import android.content.Context;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -40,6 +35,10 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewAnimator;
+
+import com.doctoror.geocoder.Address;
+import com.doctoror.geocoder.Geocoder;
+import com.doctoror.geocoder.GeocoderException;
 
 import java.lang.ref.WeakReference;
 import java.util.List;
@@ -83,7 +82,7 @@ public final class DemoActivity extends AppCompatActivity
 
     @Override
     public void onItemClick(final AdapterView<?> parent, final View view, final int position,
-            final long id) {
+                            final long id) {
         final Address item = (Address) parent.getItemAtPosition(position);
         if (item != null) {
             new AlertDialog.Builder(this).setMessage(addressToPrettyString(item))
@@ -99,42 +98,43 @@ public final class DemoActivity extends AppCompatActivity
                 "\nmIntersection='" + address.getIntersection() + '\'' +
                 "\nmPolitical='" + address.getPolitical() + '\'' +
                 "\nmCountry='" + address.getCountry() + '\'' +
+                "\nmCountryCode='" + address.getCountryCode() + '\'' +
                 "\nmAdministrativeAreaLevel1='" + address.getAdministrativeAreaLevel1() + '\'' +
-                "\nmAdministrativeAreaLevel2='"+ address.getAdministrativeAreaLevel2() + '\'' +
-                "\nmAdministrativeAreaLevel3='"+ address.getAdministrativeAreaLevel3() + '\'' +
-                "\nmAdministrativeAreaLevel4='"+ address.getAdministrativeAreaLevel4() + '\'' +
-                "\nmAdministrativeAreaLevel5='"+ address.getAdministrativeAreaLevel5() + '\'' +
-                "\nmColloquialArea='"+ address.getColloquialArea() + '\'' +
-                "\nmLocality='"+ address.getLocality() + '\'' +
-                "\nmWard='"+ address.getWard() + '\'' +
-                "\nmSubLocality='"+ address.getSubLocality() + '\'' +
-                "\nmSubLocalityLevel1='"+ address.getSubLocalityLevel1() + '\'' +
-                "\nmSubLocalityLevel2='"+ address.getSubLocalityLevel2() + '\'' +
-                "\nmSubLocalityLevel3='"+ address.getSubLocalityLevel3() + '\'' +
-                "\nmSubLocalityLevel4='"+ address.getSubLocalityLevel4() + '\'' +
-                "\nmSubLocalityLevel5='"+ address.getSubLocalityLevel5() + '\'' +
-                "\nmNeighborhood='"+ address.getNeighborhood() + '\'' +
-                "\nmPremise='"+ address.getPremise() + '\'' +
-                "\nmSubPremise='"+ address.getSubPremise() + '\'' +
-                "\nmPostalCode='"+ address.getPostalCode() + '\'' +
-                "\nmNaturalFeature='"+ address.getNaturalFeature() + '\'' +
-                "\nmAirport='"+ address.getAirport() + '\'' +
-                "\nmPark='"+ address.getPark() + '\'' +
-                "\nmPointOfInterest='"+ address.getPointOfInterest() + '\'' +
-                "\nmFloor='"+ address.getFloor() + '\'' +
-                "\nmEstablishment='"+ address.getEstablishment() + '\'' +
-                "\nmParking='"+ address.getParking() + '\'' +
-                "\nmPostBox='"+ address.getPostBox() + '\'' +
-                "\nmPostTown='"+ address.getPostTown() + '\'' +
-                "\nmRoom='"+ address.getRoom() + '\'' +
-                "\nmStreetNumber='"+ address.getStreetNumber() + '\'' +
-                "\nmBusStation='"+ address.getBusStation() + '\'' +
-                "\nmTrainStation='"+ address.getTrainStation() + '\'' +
-                "\nmTransitStation='"+ address.getTransitStation() + '\'' +
-                "\nmLocation="+ address.getLocation() +
-                "\nmLocationType='"+ address.getLocationType() + '\'' +
-                "\nmViewport="+ address.getViewport() +
-                "\nmBounds="+ address.getBounds() +
+                "\nmAdministrativeAreaLevel2='" + address.getAdministrativeAreaLevel2() + '\'' +
+                "\nmAdministrativeAreaLevel3='" + address.getAdministrativeAreaLevel3() + '\'' +
+                "\nmAdministrativeAreaLevel4='" + address.getAdministrativeAreaLevel4() + '\'' +
+                "\nmAdministrativeAreaLevel5='" + address.getAdministrativeAreaLevel5() + '\'' +
+                "\nmColloquialArea='" + address.getColloquialArea() + '\'' +
+                "\nmLocality='" + address.getLocality() + '\'' +
+                "\nmWard='" + address.getWard() + '\'' +
+                "\nmSubLocality='" + address.getSubLocality() + '\'' +
+                "\nmSubLocalityLevel1='" + address.getSubLocalityLevel1() + '\'' +
+                "\nmSubLocalityLevel2='" + address.getSubLocalityLevel2() + '\'' +
+                "\nmSubLocalityLevel3='" + address.getSubLocalityLevel3() + '\'' +
+                "\nmSubLocalityLevel4='" + address.getSubLocalityLevel4() + '\'' +
+                "\nmSubLocalityLevel5='" + address.getSubLocalityLevel5() + '\'' +
+                "\nmNeighborhood='" + address.getNeighborhood() + '\'' +
+                "\nmPremise='" + address.getPremise() + '\'' +
+                "\nmSubPremise='" + address.getSubPremise() + '\'' +
+                "\nmPostalCode='" + address.getPostalCode() + '\'' +
+                "\nmNaturalFeature='" + address.getNaturalFeature() + '\'' +
+                "\nmAirport='" + address.getAirport() + '\'' +
+                "\nmPark='" + address.getPark() + '\'' +
+                "\nmPointOfInterest='" + address.getPointOfInterest() + '\'' +
+                "\nmFloor='" + address.getFloor() + '\'' +
+                "\nmEstablishment='" + address.getEstablishment() + '\'' +
+                "\nmParking='" + address.getParking() + '\'' +
+                "\nmPostBox='" + address.getPostBox() + '\'' +
+                "\nmPostTown='" + address.getPostTown() + '\'' +
+                "\nmRoom='" + address.getRoom() + '\'' +
+                "\nmStreetNumber='" + address.getStreetNumber() + '\'' +
+                "\nmBusStation='" + address.getBusStation() + '\'' +
+                "\nmTrainStation='" + address.getTrainStation() + '\'' +
+                "\nmTransitStation='" + address.getTransitStation() + '\'' +
+                "\nmLocation=" + address.getLocation() +
+                "\nmLocationType='" + address.getLocationType() + '\'' +
+                "\nmViewport=" + address.getViewport() +
+                "\nmBounds=" + address.getBounds() +
                 '}';
     }
 
@@ -180,11 +180,7 @@ public final class DemoActivity extends AppCompatActivity
                 mLoadTask.cancel(true);
             }
             mLoadTask = new LoadTask(userInput);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-                mLoadTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-            } else {
-                mLoadTask.execute();
-            }
+            mLoadTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
     }
 
@@ -236,7 +232,7 @@ public final class DemoActivity extends AppCompatActivity
         private final WeakReference<DemoActivity> mFragmentRef;
 
         DemoActivityHandler(@NonNull final Looper looper,
-                @NonNull final DemoActivity activity) {
+                            @NonNull final DemoActivity activity) {
             super(looper);
             mFragmentRef = new WeakReference<>(activity);
         }

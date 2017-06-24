@@ -40,6 +40,8 @@ public class Address implements Parcelable {
 
     private String mCountry;
 
+    private String mCountryCode;
+
     private String mAdministrativeAreaLevel1;
 
     private String mAdministrativeAreaLevel2;
@@ -132,6 +134,7 @@ public class Address implements Parcelable {
         mIntersection = p.readString();
         mPolitical = p.readString();
         mCountry = p.readString();
+        mCountryCode = p.readString();
         mAdministrativeAreaLevel1 = p.readString();
         mAdministrativeAreaLevel2 = p.readString();
         mAdministrativeAreaLevel3 = p.readString();
@@ -180,6 +183,7 @@ public class Address implements Parcelable {
         p.writeString(mIntersection);
         p.writeString(mPolitical);
         p.writeString(mCountry);
+        p.writeString(mCountryCode);
         p.writeString(mAdministrativeAreaLevel1);
         p.writeString(mAdministrativeAreaLevel2);
         p.writeString(mAdministrativeAreaLevel3);
@@ -799,6 +803,15 @@ public class Address implements Parcelable {
         mLocationType = locationType;
     }
 
+
+    public String getCountryCode() {
+        return mCountryCode;
+    }
+
+    public void setCountryCode(String mCountryCode) {
+        this.mCountryCode = mCountryCode;
+    }
+
     @Override
     public String toString() {
         return "Address{" +
@@ -808,6 +821,7 @@ public class Address implements Parcelable {
                 ", mIntersection='" + mIntersection + '\'' +
                 ", mPolitical='" + mPolitical + '\'' +
                 ", mCountry='" + mCountry + '\'' +
+                ", mCountryCode='" + mCountryCode + '\'' +
                 ", mAdministrativeAreaLevel1='" + mAdministrativeAreaLevel1 + '\'' +
                 ", mAdministrativeAreaLevel2='" + mAdministrativeAreaLevel2 + '\'' +
                 ", mAdministrativeAreaLevel3='" + mAdministrativeAreaLevel3 + '\'' +
